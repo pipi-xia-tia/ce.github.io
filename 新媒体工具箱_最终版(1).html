@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>新媒体工具箱</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            background-color: #f5f7fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .tab-active {
+            color: #165DFF;
+            border-bottom: 2px solid #165DFF;
+        }
+        .poster-card {
+            transition: transform 0.2s;
+        }
+        .poster-card:active {
+            transform: scale(0.98);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #165DFF 0%, #4080FF 100%);
+        }
+        .btn-primary:active:not(:disabled) {
+            background: linear-gradient(135deg, #0E42D2 0%, #165DFF 100%);
+        }
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- 顶部导航 -->
+    <div class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50">
+        <div class="text-center py-4 text-lg font-bold text-gray-800">新媒体工具箱</div>
+        <!-- 选项卡 -->
+        <div class="flex border-t border-gray-100">
+            <div id="tab1" class="tab-active flex-1 text-center py-3 font-medium text-sm" onclick="switchTab(1)">
+                热点海报
+            </div>
+            <div id="tab2" class="flex-1 text-center py-3 font-medium text-sm text-gray-500" onclick="switchTab(2)">
+                图片加水印
+            </div>
+            <div id="tab3" class="flex-1 text-center py-3 font-medium text-sm text-gray-500" onclick="switchTab(3)">
+                投资心理海报
+            </div>
+        </div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="pt-24 pb-8 px-4">
+        <!-- 第一屏：热点海报 -->
+        <div id="page1" class="block">
+            <div class="text-gray-600 text-sm mb-4 text-center">长按海报即可保存到相册</div>
+            <div class="poster-card bg-white rounded-lg overflow-hidden shadow-sm max-w-md mx-auto">
+                <img src="https://ark-acg-cn-beijing.tos-cn-beijing.volces.com/doubao-seedream-5-0/0217787288296171eba3025cbd7470c83681cd6326718b9bc8767_0.jpeg?X-Tos-Algorithm=TOS4-HMAC-SHA256&X-Tos-Credential=AKLTYWJkZTExNjA1ZDUyNDc3YzhjNTM5OGIyNjBhNDcyOTQ%2F20260514%2Fcn-beijing%2Ftos%2Frequest&X-Tos-Date=20260514T032106Z&X-Tos-Expires=86400&X-Tos-Signature=5fcbb16638ac9285f13fb5dbf3f2e831a00a8979021cf3b8c5fbaef90a316a7e&X-Tos-SignedHeaders=host" alt="今日热点海报" class="w-full">
+            </div>
+        </div>
+
+        <!-- 第二屏：图片加水印 -->
+        <div id="page2" class="hidden">
+            <div class="bg-white rounded-xl p-6 shadow-sm max-w-md mx-auto">
+                <div class="text-center mb-6">
+                    <div class="text-lg font-bold text-gray-800 mb-2">图片加水印</div>
+                    <div class="text-gray-500 text-sm">上传图片后点击添加logo，生成后长按保存</div>
+                </div>
+
+                <!-- 上传按钮 -->
+                <label class="block mb-4">
+                    <div class="btn-primary text-white text-center py-4 rounded-xl font-medium cursor-pointer">
+                        📸 选择要加水印的图片
+                    </div>
+                    <input type="file" accept="image/*" class="hidden" id="uploadImg" onchange="handleUpload(this)">
+                </label>
+
+                <!-- 原图预览 -->
+                <div id="originalPreview" class="hidden mb-4">
+                    <div class="text-center text-sm text-gray-500 mb-2">原图预览</div>
+                    <div class="bg-gray-100 rounded-lg overflow-hidden">
+                        <img id="originalImg" class="w-full" alt="原图">
+                    </div>
+                </div>
+
+                <!-- 添加logo按钮 -->
+                <button id="addLogoBtn" class="btn-primary w-full text-white py-4 rounded-xl font-medium hidden" onclick="addLogo()">
+                    ✨ 添加logo
+                </button>
+
+                <!-- 制作中状态 -->
+                <div id="loadingState" class="hidden text-center py-8">
+                    <div class="inline-block spin rounded-full h-10 w-10 border-b-2 border-blue-500 mb-3"></div>
+                    <div class="text-sm text-gray-500">制作中，请稍候...</div>
+                </div>
+
+                <!-- 结果展示 -->
+                <div id="watermarkResult" class="hidden mt-6">
+                    <div class="text-center text-sm text-gray-500 mb-3">生成完成，长按保存</div>
+                    <div class="bg-gray-100 rounded-lg overflow-hidden">
+                        <img id="watermarkImg" class="w-full" alt="加水印后的图片">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第三屏：投资心理学海报生成 -->
+        <div id="page3" class="hidden">
+            <div class="bg-white rounded-xl p-6 shadow-sm max-w-md mx-auto">
+                <div class="text-center mb-6">
+                    <div class="text-lg font-bold text-gray-800 mb-2">投资心理学海报生成</div>
+                    <div class="text-gray-500 text-sm">选择知识点，一键生成专业海报</div>
+                </div>
+
+                <!-- 知识点选择 -->
+                <select id="psychologySelect" class="w-full border border-gray-200 rounded-lg py-3 px-4 mb-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                    <option value="羊群效应">羊群效应</option>
+                    <option value="损失厌恶">损失厌恶</option>
+                    <option value="锚定效应">锚定效应</option>
+                    <option value="确认偏差">确认偏差</option>
+                    <option value="过度自信">过度自信</option>
+                    <option value="禀赋效应">禀赋效应</option>
+                    <option value="沉没成本">沉没成本</option>
+                    <option value="幸存者偏差">幸存者偏差</option>
+                </select>
+
+                <!-- 生成按钮 -->
+                <button class="btn-primary w-full text-white py-4 rounded-xl font-medium" onclick="generatePsychologyPoster()">
+                    ✨ 生成海报
+                </button>
+
+                <!-- 加载状态 -->
+                <div id="psychologyLoading" class="hidden mt-6 text-center py-8">
+                    <div class="inline-block spin rounded-full h-10 w-10 border-b-2 border-blue-500 mb-3"></div>
+                    <div class="text-sm text-gray-500">正在生成海报，请稍候...</div>
+                </div>
+
+                <!-- 结果展示 -->
+                <div id="psychologyResult" class="hidden mt-6">
+                    <div class="text-center text-sm text-gray-500 mb-3">生成完成，长按保存</div>
+                    <div class="bg-gray-100 rounded-lg overflow-hidden">
+                        <img id="psychologyImg" class="w-full" alt="投资心理学海报">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 配置项
+        const API_KEY = "ark-c5366481-8d7e-48cc-9390-aaa43ae84d05-926a2";
+        const LOGO_URL = "https://s2.loli.net/2024/05/14/abc123.png"; // 这里替换成你的logo的在线链接，我刚才没存全base64，你可以先传个图床链接替换，或者我下次给你补全
+
+        // 切换标签
+        function switchTab(index) {
+            // 隐藏所有页面
+            document.getElementById('page1').classList.add('hidden');
+            document.getElementById('page2').classList.add('hidden');
+            document.getElementById('page3').classList.add('hidden');
+            // 重置tab样式
+            document.getElementById('tab1').classList.remove('tab-active');
+            document.getElementById('tab1').classList.add('text-gray-500');
+            document.getElementById('tab2').classList.remove('tab-active');
+            document.getElementById('tab2').classList.add('text-gray-500');
+            document.getElementById('tab3').classList.remove('tab-active');
+            document.getElementById('tab3').classList.add('text-gray-500');
+            // 激活对应页面和tab
+            document.getElementById('page'+index).classList.remove('hidden');
+            document.getElementById('tab'+index).classList.add('tab-active');
+            document.getElementById('tab'+index).classList.remove('text-gray-500');
+        }
+
+        // 处理上传图片
+        function handleUpload(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // 显示原图预览
+                    document.getElementById('originalImg').src = e.target.result;
+                    document.getElementById('originalPreview').classList.remove('hidden');
+                    document.getElementById('addLogoBtn').classList.remove('hidden');
+                    document.getElementById('addLogoBtn').disabled = false;
+                    document.getElementById('watermarkResult').classList.add('hidden');
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // 添加logo
+        function addLogo() {
+            // 显示加载状态
+            document.getElementById('addLogoBtn').classList.add('hidden');
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('originalPreview').classList.add('hidden');
+
+            const img = new Image();
+            img.onload = function() {
+                // 创建canvas
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                
+                // 绘制原图
+                ctx.drawImage(img, 0, 0);
+                
+                // 绘制logo，大小为原图的1/6
+                const logoSize = Math.round(img.width / 6);
+                const logoImg = new Image();
+                logoImg.crossOrigin = 'anonymous';
+                logoImg.onload = function() {
+                    ctx.drawImage(logoImg, 20, 20, logoSize, logoSize);
+                    // 导出结果
+                    const resultUrl = canvas.toDataURL('image/jpeg', 0.95);
+                    document.getElementById('watermarkImg').src = resultUrl;
+                    // 隐藏加载，显示结果
+                    document.getElementById('loadingState').classList.add('hidden');
+                    document.getElementById('watermarkResult').classList.remove('hidden');
+                    document.getElementById('addLogoBtn').classList.remove('hidden');
+                }
+                logoImg.src = LOGO_URL;
+            }
+            img.src = document.getElementById('originalImg').src;
+        }
+
+        // 生成投资心理学海报
+        async function generatePsychologyPoster() {
+            const select = document.getElementById('psychologySelect');
+            const knowledge = select.options[select.selectedIndex].text;
+            const prompt = `竖版金融海报，1440x2560px，券商官方专业风格，浅灰蓝色背景，主题：${knowledge}，内容包含300-500字的详细知识点解释，排版整齐，文字清晰，符合官方发布规范，无水印`;
+
+            // 显示加载
+            document.getElementById('psychologyLoading').classList.remove('hidden');
+            document.getElementById('psychologyResult').classList.add('hidden');
+
+            try {
+                const response = await fetch('https://ark.cn-beijing.volces.com/api/v3/images/generations', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${API_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: 'doubao-seedream-5-0-260128',
+                        prompt: prompt,
+                        n: 1,
+                        size: '1440x2560'
+                    })
+                });
+
+                const data = await response.json();
+                if (data.data && data.data[0] && data.data[0].url) {
+                    document.getElementById('psychologyImg').src = data.data[0].url;
+                    document.getElementById('psychologyResult').classList.remove('hidden');
+                } else {
+                    alert('生成失败，请重试');
+                }
+            } catch (e) {
+                alert('生成失败：' + e.message);
+            } finally {
+                document.getElementById('psychologyLoading').classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
